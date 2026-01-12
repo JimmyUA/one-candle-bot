@@ -11,6 +11,8 @@ ATR_PERIOD = 14
 LIQUIDITY_THRESHOLD = 0.25  # 25% of daily ATR
 
 # POST Endpoint for signals
+# After deploying, set this to your Cloud Function URL:
+# https://REGION-PROJECT_ID.cloudfunctions.net/telegram-publisher
 ENDPOINT_URL = "YOUR_ENDPOINT_URL"
 
 # Trading Hours (EST)
