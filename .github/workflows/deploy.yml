@@ -72,5 +72,5 @@ jobs:
             --entry-point telegram_publisher \
             --trigger-http \
             --allow-unauthenticated \
-            --set-secrets 'TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:latest' \
+            --set-secrets 'TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN_DAILY_MOVERS:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID_DAILY_MOVERS:latest' \
             --quiet
