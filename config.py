@@ -34,8 +34,8 @@ MARKET_OPEN_HOUR = 9
 MARKET_OPEN_MINUTE = 30
 INIT_HOUR = 9
 INIT_MINUTE = 45
-SESSION_END_HOUR = 11
-SESSION_END_MINUTE = 0
+SESSION_END_HOUR = 10      # Changed from 11 - trades after 10:45 have poor win rate
+SESSION_END_MINUTE = 45    # Changed from 0
 
 # Scan Interval (minutes)
 SCAN_INTERVAL_MINUTES = 5
