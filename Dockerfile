@@ -20,5 +20,10 @@ COPY main.py .
 # Cloud Run uses PORT environment variable
 ENV PORT=8080
 
+# Default symbol (can be overridden via Cloud Run Job args)
+ENV SYMBOL=AAPL
+
 # Run the application with --immediate flag for Cloud Run triggered execution
+# Symbol is passed via --args in Cloud Run Job configuration
 ENTRYPOINT ["python", "main.py", "--immediate"]
+CMD ["--symbol", "AAPL"]

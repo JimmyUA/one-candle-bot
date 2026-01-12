@@ -39,12 +39,18 @@ jobs:
           docker push gcr.io/$PROJECT_ID/$JOB_NAME:${{ github.sha }}
           docker push gcr.io/$PROJECT_ID/$JOB_NAME:latest
 
-      - name: Deploy to Cloud Run Jobs
+      - name: Deploy Cloud Run Jobs for each symbol
         run: |
-          gcloud run jobs deploy $JOB_NAME \
-            --image gcr.io/$PROJECT_ID/$JOB_NAME:${{ github.sha }} \
-            --region $REGION \
-            --quiet
+          SYMBOLS="AAPL MSFT CVX MRK WFC MCD VZ QQQ UNH AMD"
+          for SYMBOL in $SYMBOLS; do
+            JOB_SUFFIX=$(echo "$SYMBOL" | tr '[:upper:]' '[:lower:]')
+            echo "Deploying job: one-candle-bot-${JOB_SUFFIX}"
+            gcloud run jobs deploy one-candle-bot-${JOB_SUFFIX} \
+              --image gcr.io/$PROJECT_ID/$JOB_NAME:${{ github.sha }} \
+              --region $REGION \
+              --args="--symbol,$SYMBOL" \
+              --quiet
+          done
 
   deploy-function:
     runs-on: ubuntu-latest

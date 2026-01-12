@@ -3,8 +3,22 @@ Quick Flip Scalper - Configuration
 Trading bot configuration and constants.
 """
 
-# Trading Symbol
-SYMBOL = "NVDA"
+# Trading Symbols
+# Top 10 profitable stocks (Profit Factor > 1.5)
+# Based on 60-day backtest leaderboard analysis
+SYMBOLS = [
+    "AAPL",  # PF: 3.15
+    "MSFT",  # PF: 2.89
+    "CVX",   # PF: 2.66
+    "MRK",   # PF: 2.55
+    "WFC",   # PF: 2.51
+    "MCD",   # PF: 2.23
+    "VZ",    # PF: 1.83
+    "QQQ",   # PF: 1.81
+    "UNH",   # PF: 1.70
+    "AMD",   # PF: 1.67
+]
+SYMBOL = "AAPL"  # Default for single-symbol mode
 
 # ATR Configuration
 ATR_PERIOD = 14
