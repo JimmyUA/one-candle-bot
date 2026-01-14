@@ -9,6 +9,9 @@ DATA_PROVIDER = "alpaca"
 
 # Alpaca Configuration
 ALPACA_PAPER = True  # Use paper trading endpoint (recommended for testing)
+ALPACA_TRADING_ENABLED = True  # Enable/disable automated trading
+ALPACA_POSITION_SIZE_USD = 100  # Dollar amount per trade (e.g., $100)
+
 # Trading Symbols
 # Top 10 profitable stocks (Profit Factor > 1.5)
 # Based on 60-day backtest leaderboard analysis

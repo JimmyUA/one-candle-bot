@@ -18,6 +18,10 @@ import config
 if config.DATA_PROVIDER == "alpaca":
     from alpaca_data_provider import AlpacaDataProvider
 
+# Conditional import for Alpaca trader
+if config.ALPACA_TRADING_ENABLED:
+    from alpaca_trader import AlpacaTrader
+
 
 class QuickFlipScalper:
     """
@@ -57,6 +61,14 @@ class QuickFlipScalper:
         else:
             self.data_provider = None
             print("Using yfinance data provider")
+        
+        # Initialize Alpaca trader for automated order execution
+        if config.ALPACA_TRADING_ENABLED:
+            self.trader = AlpacaTrader(paper=config.ALPACA_PAPER)
+            print(f"Alpaca trading enabled (paper={config.ALPACA_PAPER}, size=${config.ALPACA_POSITION_SIZE_USD})")
+        else:
+            self.trader = None
+            print("Alpaca trading disabled")
     
     def fetch_daily_data(self, days: int = 30) -> pd.DataFrame:
         """
@@ -366,7 +378,7 @@ class QuickFlipScalper:
     
     def send_signal(self, payload: Dict[str, Any]) -> bool:
         """
-        Send trading signal via POST request.
+        Send trading signal via POST request and execute trade via Alpaca.
         
         Args:
             payload: Signal data dict
@@ -374,6 +386,10 @@ class QuickFlipScalper:
         Returns:
             True if signal sent successfully
         """
+        telegram_success = False
+        trade_success = False
+        
+        # 1. Send to Telegram (existing functionality)
         headers = {'Content-Type': 'application/json'}
         
         try:
@@ -385,16 +401,35 @@ class QuickFlipScalper:
             )
             
             if response.status_code == 200:
-                print(f"Signal sent successfully: {payload}")
-                self.signal_sent = True
-                return True
+                print(f"Telegram signal sent successfully")
+                telegram_success = True
             else:
-                print(f"Signal failed with status {response.status_code}")
-                return False
+                print(f"Telegram signal failed with status {response.status_code}")
                 
         except Exception as e:
-            print(f"Error sending signal: {e}")
-            return False
+            print(f"Error sending Telegram signal: {e}")
+        
+        # 2. Execute Alpaca trade (new functionality)
+        if config.ALPACA_TRADING_ENABLED and self.trader:
+            try:
+                result = self.trader.execute_bracket_order(
+                    symbol=payload['asset_code'],
+                    side=payload['signal_type'],
+                    notional=config.ALPACA_POSITION_SIZE_USD,
+                    entry_price=payload['entry_price'],
+                    stop_loss_price=payload['stop_loss_price'],
+                    take_profit_price=payload['target_price']
+                )
+                trade_success = result.get('success', False)
+            except Exception as e:
+                print(f"Error executing Alpaca trade: {e}")
+        
+        # Mark signal as sent if either succeeded
+        if telegram_success or trade_success:
+            self.signal_sent = True
+            return True
+        
+        return False
     
     def scan_for_signals(self) -> Optional[Dict[str, Any]]:
         """
