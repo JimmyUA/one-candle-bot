@@ -62,10 +62,16 @@ def execute_bracket_order(
     stop_loss_price = round(stop_loss_price, 2)
     take_profit_price = round(take_profit_price, 2)
     
-    # Create bracket order request with limit entry
+    # Calculate quantity from notional (bracket orders don't support notional/fractional)
+    # Use whole shares only
+    qty = int(notional / entry_price)
+    if qty < 1:
+        qty = 1  # Minimum 1 share
+    
+    # Create bracket order request with limit entry and quantity
     order_request = LimitOrderRequest(
         symbol=symbol,
-        notional=notional,
+        qty=qty,
         limit_price=entry_price,
         side=order_side,
         time_in_force=TimeInForce.DAY,
@@ -82,7 +88,8 @@ def execute_bracket_order(
         'order_id': str(order.id),
         'symbol': order.symbol,
         'side': order.side.value,
-        'notional': notional,
+        'qty': qty,
+        'notional_requested': notional,
         'entry_price': entry_price,
         'status': order.status.value,
         'stop_loss_price': stop_loss_price,
