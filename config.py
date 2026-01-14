@@ -5,7 +5,7 @@ Trading bot configuration and constants.
 
 # Data Provider Selection
 # Options: "alpaca" or "yfinance"
-DATA_PROVIDER = "alpaca"
+DATA_PROVIDER = "yfinance"
 
 # Alpaca Configuration
 ALPACA_PAPER = True  # Use paper trading endpoint (recommended for testing)
