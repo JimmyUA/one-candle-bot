@@ -14,6 +14,10 @@ import pytz
 
 import config
 
+# Conditional import for Alpaca provider
+if config.DATA_PROVIDER == "alpaca":
+    from alpaca_data_provider import AlpacaDataProvider
+
 
 class QuickFlipScalper:
     """
@@ -45,6 +49,20 @@ class QuickFlipScalper:
         # Data cache
         self._daily_data: Optional[pd.DataFrame] = None
         self._intraday_data: Optional[pd.DataFrame] = None
+        
+        # Initialize data provider based on config
+        if config.DATA_PROVIDER == "alpaca":
+            self.data_provider = AlpacaDataProvider(paper=config.ALPACA_PAPER)
+            print(f"Using Alpaca data provider (paper={config.ALPACA_PAPER})")
+        else:
+            self.data_provider = None
+            print("Using yfinance data provider")
+        
+        # Trading via Cloud Function
+        if config.ALPACA_TRADING_ENABLED:
+            print(f"Alpaca trading enabled via Cloud Function (size=${config.ALPACA_POSITION_SIZE_USD})")
+        else:
+            print("Alpaca trading disabled")
     
     def fetch_daily_data(self, days: int = 30) -> pd.DataFrame:
         """
@@ -56,15 +74,20 @@ class QuickFlipScalper:
         Returns:
             DataFrame with daily OHLCV data
         """
-        ticker = yf.Ticker(self.symbol)
-        end_date = datetime.now(self.tz)
-        start_date = end_date - timedelta(days=days)
-        
-        self._daily_data = ticker.history(
-            start=start_date.strftime('%Y-%m-%d'),
-            end=end_date.strftime('%Y-%m-%d'),
-            interval='1d'
-        )
+        if self.data_provider:
+            # Use Alpaca data provider
+            self._daily_data = self.data_provider.fetch_daily_data(self.symbol, days)
+        else:
+            # Fallback to yfinance
+            ticker = yf.Ticker(self.symbol)
+            end_date = datetime.now(self.tz)
+            start_date = end_date - timedelta(days=days)
+            
+            self._daily_data = ticker.history(
+                start=start_date.strftime('%Y-%m-%d'),
+                end=end_date.strftime('%Y-%m-%d'),
+                interval='1d'
+            )
         
         return self._daily_data
     
@@ -78,13 +101,18 @@ class QuickFlipScalper:
         Returns:
             DataFrame with intraday OHLCV data
         """
-        ticker = yf.Ticker(self.symbol)
-        
-        # yfinance requires period for intraday data
-        self._intraday_data = ticker.history(
-            period='1d',
-            interval=interval
-        )
+        if self.data_provider:
+            # Use Alpaca data provider
+            self._intraday_data = self.data_provider.fetch_intraday_data(self.symbol, interval)
+        else:
+            # Fallback to yfinance
+            ticker = yf.Ticker(self.symbol)
+            
+            # yfinance requires period for intraday data
+            self._intraday_data = ticker.history(
+                period='1d',
+                interval=interval
+            )
         
         return self._intraday_data
     
@@ -344,7 +372,7 @@ class QuickFlipScalper:
     
     def send_signal(self, payload: Dict[str, Any]) -> bool:
         """
-        Send trading signal via POST request.
+        Send trading signal via POST request and execute trade via Alpaca.
         
         Args:
             payload: Signal data dict
@@ -352,6 +380,10 @@ class QuickFlipScalper:
         Returns:
             True if signal sent successfully
         """
+        telegram_success = False
+        trade_success = False
+        
+        # 1. Send to Telegram (existing functionality)
         headers = {'Content-Type': 'application/json'}
         
         try:
@@ -363,16 +395,49 @@ class QuickFlipScalper:
             )
             
             if response.status_code == 200:
-                print(f"Signal sent successfully: {payload}")
-                self.signal_sent = True
-                return True
+                print(f"Telegram signal sent successfully")
+                telegram_success = True
             else:
-                print(f"Signal failed with status {response.status_code}")
-                return False
+                print(f"Telegram signal failed with status {response.status_code}")
                 
         except Exception as e:
-            print(f"Error sending signal: {e}")
-            return False
+            print(f"Error sending Telegram signal: {e}")
+        
+        # 2. Execute Alpaca trade via Cloud Function
+        if config.ALPACA_TRADING_ENABLED:
+            try:
+                order_payload = {
+                    'symbol': payload['asset_code'],
+                    'side': payload['signal_type'],
+                    'notional': config.ALPACA_POSITION_SIZE_USD,
+                    'entry_price': payload['entry_price'],
+                    'stop_loss_price': payload['stop_loss_price'],
+                    'take_profit_price': payload['target_price']
+                }
+                
+                response = requests.post(
+                    config.ALPACA_ORDER_EXECUTOR_URL,
+                    data=json.dumps(order_payload),
+                    headers=headers,
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    trade_success = result.get('success', False)
+                    print(f"Alpaca order executed: {result}")
+                else:
+                    print(f"Alpaca order failed with status {response.status_code}: {response.text}")
+                    
+            except Exception as e:
+                print(f"Error executing Alpaca trade: {e}")
+        
+        # Mark signal as sent if either succeeded
+        if telegram_success or trade_success:
+            self.signal_sent = True
+            return True
+        
+        return False
     
     def scan_for_signals(self) -> Optional[Dict[str, Any]]:
         """

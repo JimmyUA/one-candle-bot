@@ -3,6 +3,15 @@ Quick Flip Scalper - Configuration
 Trading bot configuration and constants.
 """
 
+# Data Provider Selection
+# Options: "alpaca" or "yfinance"
+DATA_PROVIDER = "yfinance"
+
+# Alpaca Configuration
+ALPACA_PAPER = True  # Use paper trading endpoint (recommended for testing)
+ALPACA_TRADING_ENABLED = True  # Enable/disable automated trading
+ALPACA_POSITION_SIZE_USD = 100  # Dollar amount per trade (e.g., $100)
+
 # Trading Symbols
 # Top 10 profitable stocks (Profit Factor > 1.5)
 # Based on 60-day backtest leaderboard analysis
@@ -28,6 +37,9 @@ LIQUIDITY_THRESHOLD = 0.25  # 25% of daily ATR
 # After deploying, set this to your Cloud Function URL:
 # https://REGION-PROJECT_ID.cloudfunctions.net/telegram-publisher
 ENDPOINT_URL = "https://us-central1-task-managment-481c5.cloudfunctions.net/telegram-publisher"
+
+# Alpaca Order Executor Cloud Function URL
+ALPACA_ORDER_EXECUTOR_URL = "https://us-central1-task-managment-481c5.cloudfunctions.net/alpaca-order-executor"
 
 # Trading Hours (EST)
 MARKET_OPEN_HOUR = 9
