@@ -14,6 +14,10 @@ import pytz
 
 import config
 
+# Conditional import for Alpaca provider
+if config.DATA_PROVIDER == "alpaca":
+    from alpaca_data_provider import AlpacaDataProvider
+
 
 class QuickFlipScalper:
     """
@@ -45,6 +49,14 @@ class QuickFlipScalper:
         # Data cache
         self._daily_data: Optional[pd.DataFrame] = None
         self._intraday_data: Optional[pd.DataFrame] = None
+        
+        # Initialize data provider based on config
+        if config.DATA_PROVIDER == "alpaca":
+            self.data_provider = AlpacaDataProvider(paper=config.ALPACA_PAPER)
+            print(f"Using Alpaca data provider (paper={config.ALPACA_PAPER})")
+        else:
+            self.data_provider = None
+            print("Using yfinance data provider")
     
     def fetch_daily_data(self, days: int = 30) -> pd.DataFrame:
         """
@@ -56,15 +68,20 @@ class QuickFlipScalper:
         Returns:
             DataFrame with daily OHLCV data
         """
-        ticker = yf.Ticker(self.symbol)
-        end_date = datetime.now(self.tz)
-        start_date = end_date - timedelta(days=days)
-        
-        self._daily_data = ticker.history(
-            start=start_date.strftime('%Y-%m-%d'),
-            end=end_date.strftime('%Y-%m-%d'),
-            interval='1d'
-        )
+        if self.data_provider:
+            # Use Alpaca data provider
+            self._daily_data = self.data_provider.fetch_daily_data(self.symbol, days)
+        else:
+            # Fallback to yfinance
+            ticker = yf.Ticker(self.symbol)
+            end_date = datetime.now(self.tz)
+            start_date = end_date - timedelta(days=days)
+            
+            self._daily_data = ticker.history(
+                start=start_date.strftime('%Y-%m-%d'),
+                end=end_date.strftime('%Y-%m-%d'),
+                interval='1d'
+            )
         
         return self._daily_data
     
@@ -78,13 +95,18 @@ class QuickFlipScalper:
         Returns:
             DataFrame with intraday OHLCV data
         """
-        ticker = yf.Ticker(self.symbol)
-        
-        # yfinance requires period for intraday data
-        self._intraday_data = ticker.history(
-            period='1d',
-            interval=interval
-        )
+        if self.data_provider:
+            # Use Alpaca data provider
+            self._intraday_data = self.data_provider.fetch_intraday_data(self.symbol, interval)
+        else:
+            # Fallback to yfinance
+            ticker = yf.Ticker(self.symbol)
+            
+            # yfinance requires period for intraday data
+            self._intraday_data = ticker.history(
+                period='1d',
+                interval=interval
+            )
         
         return self._intraday_data
     

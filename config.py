@@ -3,6 +3,12 @@ Quick Flip Scalper - Configuration
 Trading bot configuration and constants.
 """
 
+# Data Provider Selection
+# Options: "alpaca" or "yfinance"
+DATA_PROVIDER = "alpaca"
+
+# Alpaca Configuration
+ALPACA_PAPER = True  # Use paper trading endpoint (recommended for testing)
 # Trading Symbols
 # Top 10 profitable stocks (Profit Factor > 1.5)
 # Based on 60-day backtest leaderboard analysis
