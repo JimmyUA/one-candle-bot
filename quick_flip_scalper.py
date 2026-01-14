@@ -18,10 +18,6 @@ import config
 if config.DATA_PROVIDER == "alpaca":
     from alpaca_data_provider import AlpacaDataProvider
 
-# Conditional import for Alpaca trader
-if config.ALPACA_TRADING_ENABLED:
-    from alpaca_trader import AlpacaTrader
-
 
 class QuickFlipScalper:
     """
@@ -62,12 +58,10 @@ class QuickFlipScalper:
             self.data_provider = None
             print("Using yfinance data provider")
         
-        # Initialize Alpaca trader for automated order execution
+        # Trading via Cloud Function
         if config.ALPACA_TRADING_ENABLED:
-            self.trader = AlpacaTrader(paper=config.ALPACA_PAPER)
-            print(f"Alpaca trading enabled (paper={config.ALPACA_PAPER}, size=${config.ALPACA_POSITION_SIZE_USD})")
+            print(f"Alpaca trading enabled via Cloud Function (size=${config.ALPACA_POSITION_SIZE_USD})")
         else:
-            self.trader = None
             print("Alpaca trading disabled")
     
     def fetch_daily_data(self, days: int = 30) -> pd.DataFrame:
@@ -409,18 +403,32 @@ class QuickFlipScalper:
         except Exception as e:
             print(f"Error sending Telegram signal: {e}")
         
-        # 2. Execute Alpaca trade (new functionality)
-        if config.ALPACA_TRADING_ENABLED and self.trader:
+        # 2. Execute Alpaca trade via Cloud Function
+        if config.ALPACA_TRADING_ENABLED:
             try:
-                result = self.trader.execute_bracket_order(
-                    symbol=payload['asset_code'],
-                    side=payload['signal_type'],
-                    notional=config.ALPACA_POSITION_SIZE_USD,
-                    entry_price=payload['entry_price'],
-                    stop_loss_price=payload['stop_loss_price'],
-                    take_profit_price=payload['target_price']
+                order_payload = {
+                    'symbol': payload['asset_code'],
+                    'side': payload['signal_type'],
+                    'notional': config.ALPACA_POSITION_SIZE_USD,
+                    'entry_price': payload['entry_price'],
+                    'stop_loss_price': payload['stop_loss_price'],
+                    'take_profit_price': payload['target_price']
+                }
+                
+                response = requests.post(
+                    config.ALPACA_ORDER_EXECUTOR_URL,
+                    data=json.dumps(order_payload),
+                    headers=headers,
+                    timeout=30
                 )
-                trade_success = result.get('success', False)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    trade_success = result.get('success', False)
+                    print(f"Alpaca order executed: {result}")
+                else:
+                    print(f"Alpaca order failed with status {response.status_code}: {response.text}")
+                    
             except Exception as e:
                 print(f"Error executing Alpaca trade: {e}")
         

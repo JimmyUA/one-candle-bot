@@ -38,6 +38,9 @@ LIQUIDITY_THRESHOLD = 0.25  # 25% of daily ATR
 # https://REGION-PROJECT_ID.cloudfunctions.net/telegram-publisher
 ENDPOINT_URL = "https://us-central1-task-managment-481c5.cloudfunctions.net/telegram-publisher"
 
+# Alpaca Order Executor Cloud Function URL
+ALPACA_ORDER_EXECUTOR_URL = "https://us-central1-task-managment-481c5.cloudfunctions.net/alpaca-order-executor"
+
 # Trading Hours (EST)
 MARKET_OPEN_HOUR = 9
 MARKET_OPEN_MINUTE = 30
