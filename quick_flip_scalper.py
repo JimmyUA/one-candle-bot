@@ -11,6 +11,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, Tuple
 import pytz
+import google.auth.transport.requests
+import google.oauth2.id_token
 
 import config
 
@@ -403,7 +405,7 @@ class QuickFlipScalper:
         except Exception as e:
             print(f"Error sending Telegram signal: {e}")
         
-        # 2. Execute Alpaca trade via Cloud Function
+        # 2. Execute Alpaca trade via Cloud Function (with authentication)
         if config.ALPACA_TRADING_ENABLED:
             try:
                 order_payload = {
@@ -415,10 +417,22 @@ class QuickFlipScalper:
                     'take_profit_price': payload['target_price']
                 }
                 
+                # Get OIDC identity token for authenticated request
+                auth_req = google.auth.transport.requests.Request()
+                id_token = google.oauth2.id_token.fetch_id_token(
+                    auth_req, 
+                    config.ALPACA_ORDER_EXECUTOR_URL
+                )
+                
+                auth_headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {id_token}'
+                }
+                
                 response = requests.post(
                     config.ALPACA_ORDER_EXECUTOR_URL,
                     data=json.dumps(order_payload),
-                    headers=headers,
+                    headers=auth_headers,
                     timeout=30
                 )
                 
