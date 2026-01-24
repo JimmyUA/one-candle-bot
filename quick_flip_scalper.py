@@ -455,7 +455,11 @@ class QuickFlipScalper:
     
     def scan_for_signals(self) -> Optional[Dict[str, Any]]:
         """
-        Scan current 5-minute candles for trading signals.
+        Scan completed 5-minute candles for trading signals.
+        
+        IMPORTANT: Uses the last COMPLETED candle (iloc[-2]) instead of 
+        the current incomplete candle (iloc[-1]) to avoid false signals
+        from mid-candle data that may change before the candle closes.
         
         Returns:
             Signal payload if pattern found, None otherwise
@@ -466,11 +470,14 @@ class QuickFlipScalper:
         # Fetch latest 5-minute data
         data_5m = self.fetch_intraday_data(interval='5m')
         
-        if len(data_5m) < 2:
+        # Need at least 3 candles: current (incomplete), previous (completed), and one before
+        if len(data_5m) < 3:
             return None
         
-        current = data_5m.iloc[-1]
-        previous = data_5m.iloc[-2]
+        # Use the LAST COMPLETED candle (iloc[-2]), not the current incomplete one (iloc[-1])
+        # This prevents false signals from mid-candle data
+        current = data_5m.iloc[-2]   # Last completed candle
+        previous = data_5m.iloc[-3]  # One before that (for engulfing patterns)
         
         current_close = current['Close']
         current_low = current['Low']
