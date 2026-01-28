@@ -58,3 +58,7 @@ TIMEZONE = "America/New_York"
 # Pattern Recognition Thresholds
 HAMMER_WICK_RATIO = 2.0  # Lower wick must be at least 2x body size
 ENGULFING_BODY_OVERLAP = 1.0  # Current body must fully cover previous
+
+# Gap Fill Strategy Configuration
+GAP_THRESHOLD = 0.01  # 1% gap required to trigger trade
+GAP_STOP_LOSS_RATIO = 0.5  # Risk 0.5 to make 1.0 (Stop is 50% of gap size)

@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY config.py .
 COPY quick_flip_scalper.py .
+COPY gap_fill_bot.py .
 COPY main.py .
 
 # Cloud Run uses PORT environment variable

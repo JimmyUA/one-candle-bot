@@ -52,6 +52,16 @@ jobs:
               --quiet
           done
 
+      - name: Deploy Gap Fill Bot (TSLA)
+        run: |
+          echo "Deploying job: gap-fill-bot-tsla"
+          gcloud run jobs deploy gap-fill-bot-tsla \
+            --image gcr.io/$PROJECT_ID/$JOB_NAME:${{ github.sha }} \
+            --region $REGION \
+            --command python \
+            --args gap_fill_bot.py \
+            --quiet
+
   deploy-function:
     runs-on: ubuntu-latest
     needs: deploy
